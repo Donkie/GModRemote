@@ -1,0 +1,27 @@
+{
+  "name": "gmodremote",
+  "version": "0.1.0",
+  "description": "Control a unix Garry's Mod server remotely",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Donkie/GModRemote.git"
+  },
+  "author": "Donkie",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Donkie/GModRemote/issues"
+  },
+  "homepage": "https://github.com/Donkie/GModRemote#readme",
+  "dependencies": {
+    "express": "^4.16.2",
+    "username": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.15.0"
+  }
+}
