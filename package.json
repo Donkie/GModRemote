@@ -18,7 +18,12 @@
   },
   "homepage": "https://github.com/Donkie/GModRemote#readme",
   "dependencies": {
+    "child_process": "^1.0.2",
+    "crypto": "^1.0.1",
     "express": "^4.16.2",
+    "glob": "^7.1.2",
+    "path": "^0.12.7",
+    "srcds-rcon": "^2.2.1",
     "username": "^3.0.0"
   },
   "devDependencies": {

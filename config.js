@@ -5,7 +5,6 @@ module.exports = {
 		'127.0.0.1',
 		'localhost',
 	],
-	lgsmfolder: '~/',
-	lgsmregex: 'gmodserver-(\w+)',
+	lgsmglob: '/home/steam/gmodserver-*',
 	port: 10105
 };
