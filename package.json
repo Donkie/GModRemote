@@ -2,7 +2,7 @@
   "name": "gmodremote",
   "version": "0.1.0",
   "description": "Control a unix Garry's Mod server remotely",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js"
@@ -21,7 +21,9 @@
     "child_process": "^1.0.2",
     "crypto": "^1.0.1",
     "express": "^4.16.2",
+    "express-basic-auth": "^1.1.4",
     "glob": "^7.1.2",
+    "moment": "^2.20.1",
     "path": "^0.12.7",
     "srcds-rcon": "^2.2.1",
     "username": "^3.0.0"
