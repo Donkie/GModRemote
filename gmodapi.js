@@ -63,6 +63,12 @@ function parseFloodPhase(phase){
 
 module.exports = {
 	loadStatus: function(serverobj){
+		if(serverobj.status != "up"){
+			return new Promise((resolve, reject) => {
+				resolve(serverobj);
+			});
+		}
+
 		return shellapi.runSourceCommand(serverobj, "status")
 			.then(ret => {
 				parseStatus(serverobj, ret);
@@ -78,6 +84,12 @@ module.exports = {
 	},
 
 	loadGMStatus: function(serverobj){
+		if(serverobj.status != "up"){
+			return new Promise((resolve, reject) => {
+				resolve(serverobj);
+			});
+		}
+
 		let gm = serverobj.gamemode;
 
 		if(gm.indexOf('flood') > -1){
