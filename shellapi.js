@@ -119,7 +119,18 @@ module.exports = {
 	runLGSMCommand: function(serverobj, cmd){
 		let shellfile = 'bash /home/steam/' + serverobj.id;
 
-		return exec(shellfile + " " + cmd);
+		return exec(shellfile + " " + cmd)
+			.then(out => {
+				return out;
+			}, err => {
+				if(err.indexOf("already running") !== -1)
+					throw "Already running";
+
+				throw err;
+			});
+	},
+	runUpdateCommand: function(serverobj, cmd){
+
 	},
 	getServerHistory: function(serverobj){
 		return getServerHistory(serverobj.id);
