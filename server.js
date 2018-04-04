@@ -109,15 +109,15 @@ app.route("/server/cmd")
 
 		serverid = api.sanitizeServerID(serverid);
 
-		var cmd = req.body.cmd;
-		if(!cmd){
-			exiterror(res, "cmd not specified");
+		var body = req.body.body;
+		if(!body){
+			exiterror(res, "body not specified");
 			return;
 		}
 
 		api.getServer(serverid)
 			.then(serverobj => {
-				return api.serverCommand(serverobj, cmd);
+				return api.serverCommand(serverobj, body);
 			})
 			.then(ret => {
 				res.json({
@@ -139,19 +139,20 @@ app.route("/server/chat")
 
 		serverid = api.sanitizeServerID(serverid);
 
-		var msg = req.body.msg;
-		if(!msg){
-			exiterror(res, "msg not specified");
+		var body = req.body.body;
+		if(!body){
+			exiterror(res, "body not specified");
 			return;
 		}
 
 		api.getServer(serverid)
 			.then(serverobj => {
-				return api.serverChat(serverobj, msg);
+				return api.serverChat(serverobj, body);
 			})
 			.then(ret => {
 				res.json({
-					status: "success"
+					status: "success",
+					message: ret
 				});
 			}, err => {
 				exiterror(res, err);
