@@ -129,8 +129,23 @@ module.exports = {
 				throw err;
 			});
 	},
-	runUpdateCommand: function(serverobj, cmd){
+	runUpdateCommand: function(cmd){
+		let shellcmd;
+		switch(cmd){
+			case 'updatebattleroyale':
+				shellcmd = 'bash /home/steam/serverfiles/battleroyale/updatebattleroyale';
+				break;
+			case 'updateflood':
+				shellcmd = 'bash /home/steam/serverfiles/battleroyale/updateflood';
+				break;
+			case 'updatefloodweapons':
+				shellcmd = 'bash /home/steam/serverfiles/battleroyale/updatefloodweapons';
+				break;
+			default:
+				return Promise.reject("Invalid update command");
+		}
 
+		return exec(shellcmd);
 	},
 	getServerHistory: function(serverobj){
 		return getServerHistory(serverobj.id);

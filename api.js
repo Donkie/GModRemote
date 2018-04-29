@@ -132,5 +132,9 @@ module.exports = {
 
 	getServerHistory: function(serverobj){
 		return shellapi.getServerHistory(serverobj);
+	},
+
+	updateCommand: function(cmd){
+		return shellapi.runUpdateCommand(cmd);
 	}
 }

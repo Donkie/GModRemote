@@ -190,6 +190,36 @@ app.route("/server/:cmd")
 			})
 	});
 
+app.route("/repository/:cmd/update")
+	.post(function(req, res){
+		var repo = req.params.cmd
+
+		var cmd;
+		switch(repo){
+			case "battleroyale":
+				cmd = "updatebattleroyale";
+				break;
+			case "flood":
+				cmd = "updateflood";
+				break;
+			case "floodweapons":
+				cmd = "updatefloodweapons";
+				break;
+			default:
+				exiterror(res, "Invalid repository");
+		}
+
+		api.updateCommand(cmd)
+			.then(log => {
+				res.json({
+					status: "success",
+					message: log
+				});
+			}, err => {
+				exiterror(res, err);
+			})
+	});
+
 app.route("/server/history")
 	.get(function(req, res){
 		var serverid = req.query.serverid
