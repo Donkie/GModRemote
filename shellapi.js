@@ -136,10 +136,10 @@ module.exports = {
 				shellcmd = 'bash /home/steam/serverfiles/battleroyale/updatebattleroyale';
 				break;
 			case 'updateflood':
-				shellcmd = 'bash /home/steam/serverfiles/battleroyale/updateflood';
+				shellcmd = 'bash /home/steam/serverfiles/flood/updateflood';
 				break;
 			case 'updatefloodweapons':
-				shellcmd = 'bash /home/steam/serverfiles/battleroyale/updatefloodweapons';
+				shellcmd = 'bash /home/steam/serverfiles/flood/updatefloodweapons';
 				break;
 			default:
 				return Promise.reject("Invalid update command");
