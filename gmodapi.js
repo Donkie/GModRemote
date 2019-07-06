@@ -1,50 +1,7 @@
 "use strict";
 
 // API
-var shellapi = require('./shellapi');
-
-function simpleMatch(str, regex){
-	let m;
-	if((m = regex.exec(str)) !== null) {
-		if(m.length == 0) return null;
-
-		return m[1];
-	}
-
-	return null;
-}
-
-const statusPlayerRegex = /^#\s+(\d+)\s+"([^"]+)"\s+(STEAM_\d:\d:\d+)\s+([\d:]+)\s+(\d+)\s+(\d+)\s+(\w+)\s+([\d\.]+):\d+$/gm;
-function parseStatus(serverobj, status){
-	serverobj.hostname = simpleMatch(status, /hostname\s*:\s*(.+)/);
-	serverobj.playerCount = parseInt(simpleMatch(status, /players\s:\s(\d+)/));
-
-	serverobj.players = [];
-
-	let m;
-	while((m = statusPlayerRegex.exec(status)) !== null){
-		// This is necessary to avoid infinite loops with zero-width matches
-		if (m.index === statusPlayerRegex.lastIndex) {
-			statusPlayerRegex.lastIndex++;
-		}
-
-		//var unicodeHex = /\\u([\d\w]{4})/gi;
-		//let decodedNick = m[2].replace(unicodeHex, function (match, grp) {
-		//	return String.fromCharCode(parseInt(grp, 16));
-		//});
-
-		serverobj.players.push({
-			userid: parseInt(m[1]),
-			nick: m[2],
-			steamid: m[3],
-			time: m[4],
-			ping: parseInt(m[5]),
-			loss: parseInt(m[6]),
-			state: m[7],
-			ip: m[8],
-		});
-	}
-}
+var net = require('net');
 
 function parseFloodPhase(phase){
 	switch(phase){
@@ -61,57 +18,104 @@ function parseFloodPhase(phase){
 	}
 }
 
+function timeToStr(seconds){
+	let hours = Math.floor(seconds / 3600);
+	let minutes = Math.floor(seconds / 60) % 60;
+	seconds = seconds % 60;
+
+	let hourstxt, minutestxt;
+	if(hours > 0){
+		hourstxt = hours + ":";
+		minutestxt = minutes.toString().padStart(2, '0');
+	}else{
+		hourstxt = "";
+		minutestxt = minutes.toString();
+	}
+
+	let secondstxt = seconds.toString().padStart(2, '0');
+	return hourstxt + minutestxt + ":" + secondstxt;
+}
+
+function promiseTimeout(ms){
+	return new Promise((resolve, reject) => {
+		let id = setTimeout(() => {
+			clearTimeout(id);
+			reject('Timed out in ' + ms + 'ms.')
+		}, ms)
+	});
+}
+
 module.exports = {
-	loadStatus: function(serverobj){
-		return shellapi.runSourceCommand(serverobj, "status")
-			.then(ret => {
-				parseStatus(serverobj, ret);
+	openSocket: function(serverobj){
+		return new Promise((resolve, reject) => {
+			if(!serverobj.port){
+				reject("Process not running");
+				return;
+			}
+			let port = parseInt(serverobj.port) + 100;
 
-				if(serverobj.playerCount)
-					serverobj.status = 'up';
+			// console.log("Opening socket to port " + port);
+			serverobj.socket = new net.Socket();
+			serverobj.socket.connect(port, serverobj.ip);
+			serverobj.socket.setTimeout(1000);
 
-				return serverobj;
-			}, err => {
-				serverobj.status = 'down';
-				return serverobj;
+			serverobj.socket.on('connect', () => {
+				// console.log("Connected");
+				resolve(serverobj);
 			});
+			serverobj.socket.on('error', (err) => {
+				console.log("Error");
+				console.log(err);
+				reject(err.name + ": " + err.message);
+			});
+			serverobj.socket.on('timeout', () => {
+				console.log('Socket timeout on ' + serverobj.socket.remotePort);
+				serverobj.socket.end();
+			});
+		});
 	},
 
-	loadGMStatus: function(serverobj){
-		let gm = serverobj.gamemode;
+	closeSocket: function(serverobj){
+		return new Promise((resolve, reject) => {
+			if('socket' in serverobj)
+				serverobj.socket.end();
+			resolve(serverobj);
+		});
+	},
 
-		if(gm.indexOf('flood') > -1){
-			let lua = 'print(GAMEMODE:GetPhase() .. " " .. TimeToStr(math.Round(GAMEMODE:GetTime())))'
+	loadStatusNew: function(serverobj){
+		return Promise.race([
+			new Promise((resolve, reject) => {
+				serverobj.socket.write("GetInfo\r\n");
+				serverobj.socket.on('data', function(data){
+					data = JSON.parse(data.toString('utf8'));
 
-			return shellapi.runSourceCommand(serverobj, "lua_run " + lua)
-				.then(ret => {
-					ret = ret.split(/\r?\n/).pop();
+					serverobj.hostname = data.hostname;
+					serverobj.playerCount = data.players;
+					serverobj.uptime = data.uptime;
+					serverobj.uptimestr = timeToStr(data.uptime);
+					serverobj.status = 'up';
+					serverobj.players = data.playerinfo;
+					serverobj.gmodversionstr = data.gmodversionstr;
+					//serverobj.gamemode = data.gm; // Is set earlier but the one from this data might be more accurate
 
-					let a = ret.split(' ');
-					let phase = parseFloodPhase(parseInt(a[0]));
+					//serverobj.allData = data;
 
-					serverobj.gmstatus = phase + ' ' + a[1];
+					let gm = serverobj.gamemode;
+					if(gm.indexOf('flood') > -1){
+						serverobj.gmstatus = parseFloodPhase(data.phase) + " " + timeToStr(data.time);
+					}
+					else if(gm == "gmbr"){
+						serverobj.gmstatus = data.phase + " " + timeToStr(Math.floor(data.time));
+					}
+					else{
+						serverobj.gmstatus = 'Unknown';
+					}
 
-					return serverobj;
-				}, err => {
-					return serverobj;
+					resolve(serverobj);
 				});
-		}
-		else if(gm == "gmbr"){
-			let lua = 'print(GAMEMODE:GetPhaseName(GAMEMODE:GetPhase()) .. " " .. TimeToStr(math.Round(GAMEMODE:GetTimeElapsed())))'
-
-			return shellapi.runSourceCommand(serverobj, "lua_run " + lua)
-				.then(ret => {
-					serverobj.gmstatus = ret.split(/\r?\n/).pop();
-
-					return serverobj;
-				}, err => {
-					return serverobj;
-				});
-		}
-		else {
-			serverobj.gmstatus = 'Unknown';
-			return serverobj;
-		}
+			}),
+			promiseTimeout(200)
+		]);
 	}
 }

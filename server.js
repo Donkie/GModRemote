@@ -31,13 +31,22 @@ var options = {
 
 https.createServer(options, app).listen(config.port);
 
-console.log('Started GModRemote server as user ' + username.sync() + ' on port ' + config.port);
+function logConsole(...args){
+	console.log((new Date()).toString(), ...args);
+}
+
+logConsole('Started GModRemote server as user ' + username.sync() + ' on port ' + config.port);
 
 process.on('unhandledRejection', (reason) => {
-	console.log('Unhandled Rejection: ' + reason);
+	logConsole('Unhandled Rejection: ' + reason);
 });
 
 function exiterror(res, err){
+	if(err instanceof Error){
+		logConsole("Exit error: " + err.stack)
+		err = err.toString();
+	}
+
 	res.json({
 		status: "error",
 		error: err
@@ -71,10 +80,15 @@ app.route("/getservers")
 
 				serverPromises.push(
 					api.getServer(serverid)
-						.then(gmodapi.loadStatus)
-						.then(gmodapi.loadGMStatus)
-						.then(undefined, err => {
-							return {id: serverid, status: 'failed', error: err}
+						.then(gmodapi.openSocket)
+						.then(gmodapi.loadStatusNew)
+						.then(gmodapi.closeSocket)
+						.catch(err => {
+							if(err == "Process not running"){
+								return {id: serverid, status: 'down'}
+							}else{
+								return {id: serverid, status: 'failed', error: err}
+							}
 						})
 				);
 			});
@@ -84,6 +98,7 @@ app.route("/getservers")
 					for (var i = serverobjs.length - 1; i >= 0; i--) {
 						delete serverobjs[i].cmdline;
 						delete serverobjs[i].pid;
+						delete serverobjs[i].socket;
 					}
 
 					return serverobjs;
